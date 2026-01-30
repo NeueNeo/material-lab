@@ -238,11 +238,13 @@ function Scene({
   shape, 
   materialKey, 
   environment,
+  envBlur,
   showEffects 
 }: { 
   shape: ShapeKey
   materialKey: MaterialKey
   environment: EnvKey
+  envBlur: number
   showEffects: boolean
 }) {
   const mat = materials[materialKey]
@@ -254,8 +256,8 @@ function Scene({
       <directionalLight position={[5, 5, 5]} intensity={0.5} castShadow />
       <directionalLight position={[-5, 3, -5]} intensity={0.3} color="#ff9966" />
       
-      {/* Environment map for reflections */}
-      <Environment preset={environment} background blur={0.5} />
+      {/* Environment map for reflections + background */}
+      <Environment key={environment} preset={environment} background={true} blur={envBlur} />
       
       {/* Main object with float animation */}
       <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.5}>
@@ -319,7 +321,9 @@ export default function App() {
   const [currentMaterial, setCurrentMaterial] = useState<MaterialKey>('chrome')
   const [currentShape, setCurrentShape] = useState<ShapeKey>('sphere')
   const [currentEnv, setCurrentEnv] = useState<EnvKey>('studio')
+  const [envBlur, setEnvBlur] = useState(0.6)
   const [showEffects, setShowEffects] = useState(true)
+  const [antialias, setAntialias] = useState(true)
   const [panelOpen, setPanelOpen] = useState(true)
   
   const mat = materials[currentMaterial]
@@ -403,8 +407,35 @@ export default function App() {
             </select>
           </div>
           
-          {/* Effects toggle */}
+          {/* Background blur slider */}
           <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-[10px] text-[var(--muted)] uppercase tracking-widest">Background Blur</label>
+              <span className="text-xs text-[var(--foreground)]">{envBlur.toFixed(2)}</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={envBlur}
+              onChange={(e) => setEnvBlur(parseFloat(e.target.value))}
+              className="w-full accent-[var(--primary)]"
+            />
+          </div>
+          
+          {/* Render options */}
+          <div className="mb-6 space-y-3">
+            <label className="text-[10px] text-[var(--muted)] uppercase tracking-widest block">Render Options</label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={antialias}
+                onChange={(e) => setAntialias(e.target.checked)}
+                className="w-4 h-4 accent-[var(--primary)]"
+              />
+              <span className="text-xs text-[var(--foreground)]">Antialiasing</span>
+            </label>
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -412,7 +443,7 @@ export default function App() {
                 onChange={(e) => setShowEffects(e.target.checked)}
                 className="w-4 h-4 accent-[var(--primary)]"
               />
-              <span className="text-xs text-[var(--foreground)]">Post-processing effects</span>
+              <span className="text-xs text-[var(--foreground)]">Post-processing</span>
             </label>
           </div>
           
@@ -460,9 +491,10 @@ export default function App() {
       {/* Canvas */}
       <main className="flex-1 relative">
         <Canvas
+          key={`canvas-${antialias}`}
           shadows
           camera={{ position: [0, 0, 5], fov: 45 }}
-          gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
+          gl={{ antialias, toneMapping: THREE.ACESFilmicToneMapping }}
           dpr={[1, 2]}
         >
           <Suspense fallback={null}>
@@ -470,6 +502,7 @@ export default function App() {
               shape={currentShape}
               materialKey={currentMaterial}
               environment={currentEnv}
+              envBlur={envBlur}
               showEffects={showEffects}
             />
           </Suspense>
